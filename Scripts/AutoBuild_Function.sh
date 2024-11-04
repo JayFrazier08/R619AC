@@ -16,7 +16,7 @@ Firmware_Diy_Start() {
 	[[ -z ${Author} || ${Author} == AUTO ]] && Author="$(cut -d "/" -f4 <<< ${Github} | awk 'NR==1')"
 	if [[ ${OP_BRANCH} =~ (master|main) ]]
 	then
-		OP_VERSION_HEAD="R$(TZ=UTC-8 date +%y.%m)-"
+		OP_VERSION_HEAD="R$(date +%y.%m)-"
 	else
 		OP_VERSION_HEAD="R$(egrep -o "[0-9]+.[0-9]+" <<< ${OP_BRANCH} | awk 'NR==1')-"
 	fi
@@ -87,9 +87,6 @@ Firmware_Diy_Start() {
 		TARGET_FLAG="${Tempoary_FLAG}"
 	fi
 	case "${TARGET_BOARD}" in
-	x86)
-		AutoBuild_Fw="AutoBuild-${OP_REPO}-${TARGET_PROFILE}-${OP_VERSION}-BOOT-${TARGET_FLAG}-SHA256.FORMAT"
-	;;
 	*)
 		AutoBuild_Fw="AutoBuild-${OP_REPO}-${TARGET_PROFILE}-${OP_VERSION}-${TARGET_FLAG}-SHA256.FORMAT"
 	;;
@@ -325,7 +322,7 @@ EOF
 Firmware_Diy_End() {
 	ECHO "[Firmware_Diy_End] Starting ..."
 	source ${GITHUB_ENV}
-	ECHO "[$(TZ=UTC-8 date "+%H:%M:%S")] Actions Avaliable: $(df -h | grep "/dev/root" | awk '{printf $4}')"
+	ECHO "[$(date "+%H:%M:%S")] Actions Avaliable: $(df -h | grep "/dev/root" | awk '{printf $4}')"
 	cd ${WORK}
 	echo -e "### FIRMWARE OUTPUT ###"
 	du -ah bin/targets | egrep -v "${Regex_Skip}"
@@ -369,11 +366,15 @@ Process_Fw_Core() {
 	Fw_Format=$1
 	shift
 	while [[ $1 ]];do
-		Fw=${AutoBuild_Fw}
 		case "${TARGET_BOARD}" in
 		x86)
-			[[ $1 =~ efi ]] && Fw_Boot=UEFI || Fw_Boot=BIOS
-			Fw=${Fw/BOOT/${Fw_Boot}}
+			if [[ $1 =~ efi ]]
+			then
+				Fw=${AutoBuild_Fw}
+			fi
+		;;
+		*)
+			Fw=${AutoBuild_Fw}
 		;;
 		esac
 		Fw=${Fw/SHA256/$(Get_sha256 $1)}
@@ -428,7 +429,7 @@ gz_Check() {
 }
 
 ECHO() {
-	echo "[$(TZ=UTC-8 date "+%H:%M:%S")] $*"
+	echo "[$(date "+%H:%M:%S")] $*"
 }
 
 PKG_Finder() {
